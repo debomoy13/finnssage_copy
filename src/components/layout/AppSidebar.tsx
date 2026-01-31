@@ -1,0 +1,166 @@
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard,
+  CreditCard,
+  PieChart,
+  Bot,
+  TrendingUp,
+  Bell,
+  Target,
+  FileText,
+  Settings,
+  Shield,
+  LogOut,
+  ChevronLeft,
+  Wallet,
+  Sparkles,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+interface SidebarItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+}
+
+const mainNavItems: SidebarItem[] = [
+  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Spending", href: "/spending", icon: PieChart },
+  { name: "Credit Cards", href: "/credit-optimizer", icon: CreditCard, badge: "New" },
+  { name: "AI Console", href: "/ai-console", icon: Bot },
+  { name: "Investments", href: "/investments", icon: TrendingUp },
+  { name: "Alerts", href: "/alerts", icon: Bell },
+  { name: "Goals", href: "/goals", icon: Target },
+  { name: "Reports", href: "/reports", icon: FileText },
+];
+
+const bottomNavItems: SidebarItem[] = [
+  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Privacy", href: "/privacy", icon: Shield },
+];
+
+export function AppSidebar() {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <aside
+      className={cn(
+        "flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out",
+        collapsed ? "w-16" : "w-64"
+      )}
+    >
+      {/* Logo */}
+      <div className="flex items-center h-16 px-4 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-info">
+            <Sparkles className="w-5 h-5 text-primary-foreground" />
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-sidebar-primary-foreground">
+                FinSage
+              </span>
+              <span className="text-xs text-muted-foreground">AI</span>
+            </div>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "ml-auto text-sidebar-foreground hover:bg-sidebar-accent transition-transform duration-200",
+            collapsed && "rotate-180"
+          )}
+          onClick={() => setCollapsed(!collapsed)}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Main navigation */}
+      <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin">
+        <ul className="space-y-1 px-2">
+          {mainNavItems.map((item) => (
+            <li key={item.name}>
+              <NavLink
+                to={item.href}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                    "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    isActive && "sidebar-item-active bg-sidebar-accent text-sidebar-primary"
+                  )
+                }
+              >
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1">{item.name}</span>
+                    {item.badge && (
+                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-primary/20 text-primary">
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
+                )}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* Bottom navigation */}
+      <div className="border-t border-sidebar-border py-4">
+        <ul className="space-y-1 px-2">
+          {bottomNavItems.map((item) => (
+            <li key={item.name}>
+              <NavLink
+                to={item.href}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                    "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    isActive && "sidebar-item-active bg-sidebar-accent text-sidebar-primary"
+                  )
+                }
+              >
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && <span>{item.name}</span>}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+
+        {/* User section */}
+        <div className={cn(
+          "mt-4 mx-2 p-3 rounded-lg bg-sidebar-accent/50",
+          collapsed && "p-2"
+        )}>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-primary to-info text-xs font-bold text-primary-foreground">
+              JD
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-accent-foreground truncate">
+                  John Doe
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  Premium Plan
+                </p>
+              </div>
+            )}
+            {!collapsed && (
+              <Button variant="ghost" size="icon" className="text-sidebar-foreground hover:bg-sidebar-accent">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
