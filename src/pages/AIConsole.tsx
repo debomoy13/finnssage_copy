@@ -48,13 +48,13 @@ const initialMessages: Message[] = [
   {
     id: 3,
     role: "assistant",
-    content: "I've analyzed your January spending and found some key insights:\n\n**Spending Overview:**\n- Total: $4,447 (12% higher than December)\n- Biggest increase: Dining (+40%)\n- Unusual transaction: $450 at Best Buy\n\n**Root Causes:**\n1. Holiday-related dining expenses carried into January\n2. One-time electronics purchase\n3. 3 new subscription services added\n\nWould you like me to suggest ways to reduce spending this month?",
+    content: "I've analyzed your January spending and found some key insights:\n\n**Spending Overview:**\n- Total: ₹4,447 (12% higher than December)\n- Biggest increase: Dining (+40%)\n- Unusual transaction: ₹450 at Best Buy\n\n**Root Causes:**\n1. Holiday-related dining expenses carried into January\n2. One-time electronics purchase\n3. 3 new subscription services added\n\nWould you like me to suggest ways to reduce spending this month?",
     timestamp: "10:31 AM",
-    reasoning: "I identified these patterns by comparing your current month's transactions against your 6-month average, flagging categories with >20% variance and any single transactions over $200.",
+    reasoning: "I identified these patterns by comparing your current month's transactions against your 6-month average, flagging categories with >20% variance and any single transactions over ₹200.",
   },
   {
     id: 4,
-    role: "user", 
+    role: "user",
     content: "Yes, what do you recommend?",
     timestamp: "10:32 AM",
   },
@@ -64,8 +64,8 @@ const initialMessages: Message[] = [
     content: "Based on your spending patterns and goals, here are my recommendations:\n\n**Immediate Actions:**",
     timestamp: "10:32 AM",
     actions: [
-      { type: "approve", label: "Cancel unused Peacock subscription ($5.99/mo)" },
-      { type: "approve", label: "Set dining budget alert at $400/mo" },
+      { type: "approve", label: "Cancel unused Peacock subscription (₹599/mo)" },
+      { type: "approve", label: "Set dining budget alert at ₹40,000/mo" },
       { type: "info", label: "Switch groceries to AMEX Gold for 4x points" },
     ],
     reasoning: "These recommendations are based on: (1) Your Peacock subscription shows 0 activity in 90 days, (2) Your dining spending exceeds budget 4 of last 6 months, (3) You're leaving 3x points on the table with current grocery card usage.",
@@ -86,17 +86,17 @@ export default function AIConsole() {
 
   const handleSend = () => {
     if (!input.trim()) return;
-    
+
     const newMessage: Message = {
       id: messages.length + 1,
       role: "user",
       content: input,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
-    
+
     setMessages([...messages, newMessage]);
     setInput("");
-    
+
     // Simulate AI response
     setTimeout(() => {
       const aiResponse: Message = {
@@ -124,11 +124,10 @@ export default function AIConsole() {
                 >
                   {/* Avatar */}
                   <div
-                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      message.role === "assistant"
+                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.role === "assistant"
                         ? "bg-gradient-to-br from-primary to-info"
                         : "bg-secondary"
-                    }`}
+                      }`}
                   >
                     {message.role === "assistant" ? (
                       <Bot className="w-4 h-4 text-primary-foreground" />
@@ -140,14 +139,13 @@ export default function AIConsole() {
                   {/* Message content */}
                   <div className={`flex-1 max-w-[80%] ${message.role === "user" ? "text-right" : ""}`}>
                     <div
-                      className={`inline-block p-4 rounded-2xl ${
-                        message.role === "assistant"
+                      className={`inline-block p-4 rounded-2xl ${message.role === "assistant"
                           ? "bg-secondary/50 text-left"
                           : "bg-primary text-primary-foreground"
-                      }`}
+                        }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      
+
                       {/* Actions */}
                       {message.actions && (
                         <div className="mt-4 space-y-2">
@@ -232,7 +230,7 @@ export default function AIConsole() {
                   </Button>
                 ))}
               </div>
-              
+
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -310,8 +308,8 @@ export default function AIConsole() {
           <Card className="bg-secondary/30">
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">
-                <strong>Note:</strong> AI suggestions are for informational purposes only. 
-                Always review recommendations before taking action. FinSage AI does not 
+                <strong>Note:</strong> AI suggestions are for informational purposes only.
+                Always review recommendations before taking action. FinSage AI does not
                 execute transactions without explicit user approval.
               </p>
             </CardContent>

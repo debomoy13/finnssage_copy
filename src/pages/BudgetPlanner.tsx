@@ -120,18 +120,18 @@ export default function BudgetPlanner() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Budget</p>
-                                <p className="text-2xl font-bold">${totalBudget.toLocaleString()}</p>
+                                <p className="text-2xl font-bold">₹{totalBudget.toLocaleString()}</p>
                                 <p className="text-xs text-muted-foreground mt-1">Monthly allocation</p>
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Spent</p>
-                                <p className="text-2xl font-bold">${totalSpent.toLocaleString()}</p>
+                                <p className="text-2xl font-bold">₹{totalSpent.toLocaleString()}</p>
                                 <p className="text-xs text-muted-foreground mt-1">{budgetUtilization}% utilized</p>
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Remaining</p>
                                 <p className={`text-2xl font-bold ${remainingBudget >= 0 ? "text-success" : "text-destructive"}`}>
-                                    ${Math.abs(remainingBudget).toLocaleString()}
+                                    {remainingBudget < 0 ? `-₹${Math.abs(remainingBudget).toLocaleString()}` : `₹${remainingBudget.toLocaleString()} left`}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     {remainingBudget >= 0 ? "Left to spend" : "Over budget"}
@@ -139,9 +139,9 @@ export default function BudgetPlanner() {
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Monthly Income</p>
-                                <p className="text-2xl font-bold">${financialData.monthlyIncome.toLocaleString()}</p>
+                                <p className="text-2xl font-bold">₹{financialData.monthlyIncome.toLocaleString()}</p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Savings: ${(financialData.monthlyIncome - totalSpent).toLocaleString()}
+                                    Savings: ₹{(financialData.monthlyIncome - totalSpent).toLocaleString()}
                                 </p>
                             </div>
                         </div>
@@ -175,7 +175,7 @@ export default function BudgetPlanner() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="cat-budget">Monthly Budget ($)</Label>
+                                        <Label htmlFor="cat-budget">Monthly Budget (₹)</Label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                             <Input
@@ -212,10 +212,10 @@ export default function BudgetPlanner() {
                                                 <div>
                                                     <p className="font-medium">{category.name}</p>
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                        <span>${category.spent} of ${category.budget}</span>
+                                                        <span>₹{category.spent} of ₹{category.budget}</span>
                                                         {isOverBudget && (
                                                             <Badge variant="destructive" className="text-xs">
-                                                                Over by ${(category.spent - category.budget).toFixed(0)}
+                                                                Over by ₹{(category.spent - category.budget).toFixed(0)}
                                                             </Badge>
                                                         )}
                                                     </div>
@@ -223,7 +223,7 @@ export default function BudgetPlanner() {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className={`text-sm font-medium ${isOverBudget ? "text-destructive" : remaining > category.budget * 0.2 ? "text-success" : "text-warning"}`}>
-                                                    {isOverBudget ? `-$${Math.abs(remaining)}` : `$${remaining} left`}
+                                                    {isOverBudget ? `-₹${Math.abs(remaining)}` : `₹${remaining} left`}
                                                 </span>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteCategory(category.id)}>
                                                     <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
@@ -265,7 +265,7 @@ export default function BudgetPlanner() {
                                         <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} width={80} />
                                         <Tooltip
                                             contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "0.5rem" }}
-                                            formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
+                                            formatter={(value: number) => [`₹${value.toLocaleString()}`, ""]}
                                         />
                                         <Bar dataKey="budget" fill="hsl(var(--muted))" radius={[0, 4, 4, 0]} name="Budget" />
                                         <Bar dataKey="spent" radius={[0, 4, 4, 0]} name="Spent">

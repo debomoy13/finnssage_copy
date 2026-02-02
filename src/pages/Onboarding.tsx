@@ -165,7 +165,7 @@ export default function Onboarding() {
 
                     toast({
                         title: "File parsed successfully!",
-                        description: `Found ${transactions.length} transactions. Estimated annual income: $${estimatedAnnual.toLocaleString()}`,
+                        description: `Found ${transactions.length} transactions. Estimated annual income: ₹${estimatedAnnual.toLocaleString()}`,
                     });
                 } catch (err) {
                     setParseError(err instanceof Error ? err.message : "Failed to parse file");
@@ -356,7 +356,7 @@ export default function Onboarding() {
 
                                         <div className="space-y-2">
                                             <Label htmlFor="income">
-                                                {incomeType === "annual" ? "Annual" : "Monthly"} Income (USD)
+                                                {incomeType === "annual" ? "Annual" : "Monthly"} Income (INR)
                                             </Label>
                                             <div className="relative">
                                                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -394,8 +394,8 @@ export default function Onboarding() {
                                 <div className="space-y-6">
                                     <div
                                         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadedFile
-                                                ? "border-primary bg-primary/5"
-                                                : "border-border hover:border-primary/50"
+                                            ? "border-primary bg-primary/5"
+                                            : "border-border hover:border-primary/50"
                                             }`}
                                         onClick={() => fileInputRef.current?.click()}
                                     >
@@ -449,7 +449,7 @@ export default function Onboarding() {
                                                 <div>
                                                     <p className="text-xs text-muted-foreground">Total Income</p>
                                                     <p className="font-semibold text-success">
-                                                        ${parsedData.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0).toLocaleString()}
+                                                        ₹{parsedData.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0).toLocaleString()}
                                                     </p>
                                                 </div>
                                             </div>

@@ -69,7 +69,7 @@ function LoanCalculator() {
         <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="loan-amount">Loan Amount ($)</Label>
+                    <Label htmlFor="loan-amount">Loan Amount (₹)</Label>
                     <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -116,16 +116,16 @@ function LoanCalculator() {
                         <div className="space-y-4">
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Monthly Payment</p>
-                                <p className="text-3xl font-bold text-primary">${monthlyPayment.toFixed(2)}</p>
+                                <p className="text-3xl font-bold text-primary">₹{monthlyPayment.toFixed(2)}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                                 <div>
                                     <p className="text-xs text-muted-foreground">Total Payment</p>
-                                    <p className="text-lg font-semibold">${totalPayment.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                    <p className="text-lg font-semibold">₹{totalPayment.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground">Total Interest</p>
-                                    <p className="text-lg font-semibold text-destructive">${totalInterest.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                    <p className="text-lg font-semibold text-destructive">₹{totalInterest.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                                 </div>
                             </div>
                         </div>
@@ -150,10 +150,10 @@ function LoanCalculator() {
                             {schedule.map((row) => (
                                 <tr key={row.month} className="border-b border-border/50 hover:bg-secondary/30">
                                     <td className="py-2">{row.month}</td>
-                                    <td className="text-right py-2">${row.payment}</td>
-                                    <td className="text-right py-2 text-success">${row.principal}</td>
-                                    <td className="text-right py-2 text-destructive">${row.interest}</td>
-                                    <td className="text-right py-2 font-medium">${row.balance}</td>
+                                    <td className="text-right py-2">₹{row.payment}</td>
+                                    <td className="text-right py-2 text-success">₹{row.principal}</td>
+                                    <td className="text-right py-2 text-destructive">₹{row.interest}</td>
+                                    <td className="text-right py-2 font-medium">₹{row.balance}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -205,7 +205,7 @@ function InvestmentCalculator() {
         <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="initial">Initial Investment ($)</Label>
+                    <Label htmlFor="initial">Initial Investment (₹)</Label>
                     <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -219,7 +219,7 @@ function InvestmentCalculator() {
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="monthly">Monthly Contribution ($)</Label>
+                    <Label htmlFor="monthly">Monthly Contribution (₹)</Label>
                     <div className="relative">
                         <PiggyBank className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -266,16 +266,16 @@ function InvestmentCalculator() {
                         <div className="space-y-4">
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Future Value</p>
-                                <p className="text-3xl font-bold text-success">${futureValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                                <p className="text-3xl font-bold text-success">₹{futureValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                                 <div>
                                     <p className="text-xs text-muted-foreground">Total Contributions</p>
-                                    <p className="text-lg font-semibold">${totalContributions.toLocaleString()}</p>
+                                    <p className="text-lg font-semibold">₹{totalContributions.toLocaleString()}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground">Total Earnings</p>
-                                    <p className="text-lg font-semibold text-success">+${totalEarnings.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                                    <p className="text-lg font-semibold text-success">+₹{totalEarnings.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                                 </div>
                             </div>
                         </div>
@@ -303,7 +303,7 @@ function InvestmentCalculator() {
                             <YAxis hide />
                             <Tooltip
                                 contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "0.5rem" }}
-                                formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
+                                formatter={(value: number) => [`₹${value.toLocaleString()}`, ""]}
                             />
                             <Area type="monotone" dataKey="value" stroke="#10b981" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} name="Total Value" />
                             <Area type="monotone" dataKey="contributions" stroke="#6366f1" fillOpacity={1} fill="url(#colorContributions)" strokeWidth={2} name="Contributions" />
@@ -342,7 +342,7 @@ function MortgageCalculator() {
         <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="home-price">Home Price ($)</Label>
+                    <Label htmlFor="home-price">Home Price (₹)</Label>
                     <div className="relative">
                         <Home className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -403,25 +403,25 @@ function MortgageCalculator() {
                         <div className="space-y-4">
                             <div>
                                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Monthly Payment</p>
-                                <p className="text-3xl font-bold text-info">${totalMonthly.toFixed(2)}</p>
+                                <p className="text-3xl font-bold text-info">₹{totalMonthly.toFixed(2)}</p>
                             </div>
                             <div className="space-y-2 pt-4 border-t border-border text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Principal & Interest</span>
-                                    <span className="font-medium">${monthlyMortgage.toFixed(2)}</span>
+                                    <span className="font-medium">₹{monthlyMortgage.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Property Tax</span>
-                                    <span className="font-medium">${propertyTax.toFixed(2)}</span>
+                                    <span className="font-medium">₹{propertyTax.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Insurance</span>
-                                    <span className="font-medium">${insurance.toFixed(2)}</span>
+                                    <span className="font-medium">₹{insurance.toFixed(2)}</span>
                                 </div>
                             </div>
                             <div className="pt-4 border-t border-border">
                                 <p className="text-xs text-muted-foreground">Down Payment Required</p>
-                                <p className="text-lg font-bold">${downPayment.toLocaleString()}</p>
+                                <p className="text-lg font-bold">₹{downPayment.toLocaleString()}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -452,19 +452,19 @@ function MortgageCalculator() {
                                 </tr>
                                 <tr>
                                     <td className="py-3 text-muted-foreground">Annual Property Tax (est.)</td>
-                                    <td className="py-3 text-right font-semibold">${(propertyTax * 12).toLocaleString()}</td>
+                                    <td className="py-3 text-right font-semibold">₹{(propertyTax * 12).toLocaleString()}</td>
                                 </tr>
                                 <tr>
                                     <td className="py-3 text-muted-foreground">Annual Insurance (est.)</td>
-                                    <td className="py-3 text-right font-semibold">${(insurance * 12).toLocaleString()}</td>
+                                    <td className="py-3 text-right font-semibold">₹{(insurance * 12).toLocaleString()}</td>
                                 </tr>
                                 <tr>
                                     <td className="py-3 font-medium">Total Monthly Payment</td>
-                                    <td className="py-3 text-right font-bold text-info">${totalMonthly.toFixed(2)}</td>
+                                    <td className="py-3 text-right font-bold text-info">₹{totalMonthly.toFixed(2)}</td>
                                 </tr>
                                 <tr>
                                     <td className="py-3 font-medium">Total Annual Payment</td>
-                                    <td className="py-3 text-right font-bold">${(totalMonthly * 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                    <td className="py-3 text-right font-bold">₹{(totalMonthly * 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -528,10 +528,10 @@ function CreditCardPayoffCalculator() {
         }
 
         return {
-            payment: `$${payment}`,
+            payment: `₹${payment}`,
             months: mon,
-            interest: `$${intPaid.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
-            total: `$${(ccBalance + intPaid).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+            interest: `₹${intPaid.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+            total: `₹${(ccBalance + intPaid).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
         };
     });
 
@@ -539,7 +539,7 @@ function CreditCardPayoffCalculator() {
         <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="cc-balance">Current Balance ($)</Label>
+                    <Label htmlFor="cc-balance">Current Balance (₹)</Label>
                     <div className="relative">
                         <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -568,7 +568,7 @@ function CreditCardPayoffCalculator() {
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="cc-payment">Monthly Payment ($)</Label>
+                    <Label htmlFor="cc-payment">Monthly Payment (₹)</Label>
                     <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -583,7 +583,7 @@ function CreditCardPayoffCalculator() {
 
                 {paymentTooLow && (
                     <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 text-warning text-sm">
-                        ⚠️ Payment too low! Your payment must exceed the monthly interest charge of ${(ccBalance * monthlyRate).toFixed(2)}.
+                        ⚠️ Payment too low! Your payment must exceed the monthly interest charge of ₹{(ccBalance * monthlyRate).toFixed(2)}.
                     </div>
                 )}
 
@@ -600,11 +600,11 @@ function CreditCardPayoffCalculator() {
                                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                                     <div>
                                         <p className="text-xs text-muted-foreground">Total Interest</p>
-                                        <p className="text-lg font-semibold text-destructive">${totalInterestPaid.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                                        <p className="text-lg font-semibold text-destructive">₹{totalInterestPaid.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-muted-foreground">Total Paid</p>
-                                        <p className="text-lg font-semibold">${(ccBalance + totalInterestPaid).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                                        <p className="text-lg font-semibold">₹{(ccBalance + totalInterestPaid).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                                     </div>
                                 </div>
                             )}
@@ -645,7 +645,7 @@ function CreditCardPayoffCalculator() {
 
                 <div className="mt-4 p-4 rounded-lg bg-info/10 border border-info/20">
                     <p className="text-sm text-muted-foreground">
-                        <strong className="text-foreground">💡 Tip:</strong> Increasing your payment by just 50% could save you ${scenarios[0] && scenarios[1] ? (parseFloat(scenarios[0].interest.replace(/[$,]/g, "")) - parseFloat(scenarios[1].interest.replace(/[$,]/g, ""))).toFixed(0) : 0} in interest!
+                        <strong className="text-foreground">💡 Tip:</strong> Increasing your payment by just 50% could save you ₹{scenarios[0] && scenarios[1] ? (parseFloat(scenarios[0].interest.replace(/[₹,]/g, "")) - parseFloat(scenarios[1].interest.replace(/[₹,]/g, ""))).toFixed(0) : 0} in interest!
                     </p>
                 </div>
             </div>

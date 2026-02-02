@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     id: authUser.id,
                     email: authUser.email,
                     full_name: fullName || authUser.user_metadata?.full_name || null,
-                    currency_preference: "USD",
+                    currency_preference: "INR",
                     onboarding_completed: false,
                 })
                 .select()

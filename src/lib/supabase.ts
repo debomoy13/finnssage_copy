@@ -25,7 +25,7 @@ export interface Profile {
     full_name: string | null;
     annual_income: number | null;
     monthly_income: number | null;
-    currency_preference: 'USD' | 'INR';
+    currency_preference: 'INR' | 'USD';
     onboarding_completed: boolean;
     created_at: string;
     updated_at: string;
