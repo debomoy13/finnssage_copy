@@ -254,8 +254,14 @@ export default function StockTrading() {
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const [dynamicStockData, setDynamicStockData] = useState<any>(null);
+    const [marketMetrics, setMarketMetrics] = useState<any>(null);
+    const [realChartData, setRealChartData] = useState<any[]>([]);
+
+    // Use dynamic data even for "AAPL" if available, else static
     const stock = dynamicStockData || stockData[selectedStock] || stockData["AAPL"];
-    const chartData = generateChartData();
+
+    // Use real chart data if available
+    const chartData = realChartData.length > 0 ? realChartData : generateChartData();
     const totalCost = quantity * stock.price;
 
     // Calculate personalized metrics
@@ -311,50 +317,79 @@ export default function StockTrading() {
         setSelectedStock(symbol);
         setStockSearch("");
         setShowSearchResults(false);
-
-        if (stockData[symbol]) {
-            setDynamicStockData(null);
-            setIsSearching(false);
-            return;
-        }
+        setRealChartData([]); // Reset chart
 
         try {
-            const quote = await finnhubService.getQuote(symbol);
-            const profile = await finnhubService.getCompanyProfile(symbol);
+            // Fetch everything in parallel
+            const now = Math.floor(Date.now() / 1000);
+            const threeMonthsAgo = now - (90 * 24 * 60 * 60);
+
+            const [quote, profile, financials, candles] = await Promise.all([
+                finnhubService.getQuote(symbol),
+                finnhubService.getCompanyProfile(symbol),
+                finnhubService.getBasicFinancials(symbol),
+                finnhubService.getCandles(symbol, 'D', threeMonthsAgo, now)
+            ]);
+
+            // Process Chart Data
+            if (candles.s === 'ok' && candles.t) {
+                const formattedChartData = candles.t.map((timestamp, index) => ({
+                    date: new Date(timestamp * 1000).toLocaleDateString(),
+                    open: candles.o[index],
+                    high: candles.h[index],
+                    low: candles.l[index],
+                    close: candles.c[index],
+                    volume: candles.v[index],
+                    price: candles.c[index]
+                }));
+                setRealChartData(formattedChartData);
+            }
+
+            // Process Metrics
+            setMarketMetrics(financials.metric || {});
 
             setDynamicStockData({
                 name: profile.name || symbol,
                 symbol: profile.ticker || symbol,
-                sector: profile.finnhubIndustry || 'Technology',
+                sector: profile.finnhubIndustry || 'N/A',
                 marketCap: profile.marketCapitalization ? `${(profile.marketCapitalization / 1000).toFixed(2)}B` : 'N/A',
-                peRatio: "N/A",
-                eps: "N/A",
-                dividend: "N/A",
-                beta: "1.2", // Default for new stocks
-                high52w: quote.h?.toFixed(2) || '0.00',
-                low52w: quote.l?.toFixed(2) || '0.00',
-                avgVolume: "N/A",
-                description: `${profile.name || symbol} - ${profile.finnhubIndustry || 'Stock'}`,
-                price: quote.c || 100,
+                peRatio: financials.metric?.peBasicExclExtraTTM?.toFixed(2) || 'N/A',
+                eps: financials.metric?.epsExclExtraTTM?.toFixed(2) || 'N/A',
+                dividend: financials.metric?.dividendYieldIndicatedAnnual?.toFixed(2) || 'N/A',
+                beta: financials.metric?.beta?.toFixed(2) || 'N/A',
+                high52w: financials.metric?.['52WeekHigh']?.toFixed(2) || quote.h?.toFixed(2) || '0.00',
+                low52w: financials.metric?.['52WeekLow']?.toFixed(2) || quote.l?.toFixed(2) || '0.00',
+                avgVolume: financials.metric?.['10DayAverageTradingVolume'] ? `${(financials.metric['10DayAverageTradingVolume'] / 1000000).toFixed(2)}M` : 'N/A',
+                description: `${profile.name || symbol} - ${profile.finnhubIndustry || ''}`,
+                price: quote.c || 0,
                 change: quote.d || 0,
                 changePercent: quote.dp || 0
             });
+
         } catch (error) {
             console.error("Error fetching stock details:", error);
-            // Fallback for error
-            setDynamicStockData({
-                name: symbol,
-                symbol: symbol,
-                sector: "Unknown",
-                price: 100,
-                change: 0,
-                changePercent: 0,
-                beta: "1.0",
-                description: "Stock data unavailable"
-            });
+            // Fallback
+            if (stockData[symbol]) {
+                setDynamicStockData(null); // Revert to mock
+            } else {
+                setDynamicStockData({
+                    name: symbol,
+                    symbol: symbol,
+                    sector: "N/A",
+                    price: 0,
+                    change: 0,
+                    changePercent: 0,
+                    description: "Data unavailable"
+                });
+            }
         }
         setIsSearching(false);
     };
+
+    // Initial load
+    useEffect(() => {
+        handleSelectStock(selectedStock);
+    }, []);
 
     // Auto-scroll messages
     useEffect(() => {
@@ -520,16 +555,15 @@ export default function StockTrading() {
                 {isAgentActive && (
                     <>
                         <div
-                            className="fixed w-6 h-6 pointer-events-none z-50 transition-all duration-1000 ease-out"
+                            className="fixed w-6 h-6 pointer-events-none z-[9999] transition-all duration-100 grid place-items-center"
                             style={{
                                 left: `${cursorPosition.x}px`,
                                 top: `${cursorPosition.y}px`,
-                                transform: 'translate(-50%, -50%)'
+                                // Removed center transform to make tip point at target
                             }}
                         >
                             <div className="relative">
-                                <Eye className="w-6 h-6 text-primary animate-pulse" />
-                                <div className="absolute inset-0 w-6 h-6 bg-primary/20 rounded-full animate-ping" />
+                                <MousePointer2 className="w-6 h-6 text-primary fill-primary" />
                             </div>
                         </div>
 
