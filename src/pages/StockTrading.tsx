@@ -181,6 +181,18 @@ function calculateRSI(prices: number[], period: number = 14) {
     return 100 - (100 / (1 + rs));
 }
 
+function getCurrencySymbol(currency: string) {
+    if (!currency) return '$';
+    const map: Record<string, string> = {
+        'INR': '₹',
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'JPY': '¥'
+    };
+    return map[currency.toUpperCase()] || '$';
+}
+
 const DEFAULT_INDICATORS = [
     { label: "RSI (14)", value: "58.4", status: "Neutral" },
     { label: "MACD", value: "+0.82", status: "Bullish", positive: true },
@@ -366,6 +378,23 @@ export default function StockTrading() {
             try { candles = await finnhubService.getCandles(symbol, 'D', threeMonthsAgo, now) || candles; } catch (e) { console.warn('Candles failed', e); }
 
             // Process Chart Data & Indicators
+            let finalPrice = quote.c;
+            let finalChange = quote.d;
+            let finalChangePercent = quote.dp;
+            let currencyCode = profile.currency || 'USD';
+
+            // Independent check: If quote failed but candles exist, use latest candle
+            if ((!finalPrice || finalPrice === 0) && candles.c && candles.c.length > 0) {
+                const lastIndex = candles.c.length - 1;
+                const prevIndex = Math.max(0, lastIndex - 1);
+                finalPrice = candles.c[lastIndex];
+                const prevPrice = candles.c[prevIndex];
+                finalChange = finalPrice - prevPrice;
+                finalChangePercent = prevPrice ? ((finalChange / prevPrice) * 100) : 0;
+            }
+            if (symbol.endsWith('.NS') || symbol.endsWith('.BO')) currencyCode = 'INR';
+            const currSym = getCurrencySymbol(currencyCode);
+
             if (candles.s === 'ok' && candles.t) {
                 const formattedChartData = candles.t.map((timestamp, index) => ({
                     date: new Date(timestamp * 1000).toLocaleDateString(),
@@ -389,8 +418,8 @@ export default function StockTrading() {
                 setIndicators([
                     { label: "RSI (14)", value: rsi.toFixed(1), status: rsi > 70 ? "Overbought" : rsi < 30 ? "Oversold" : "Neutral", positive: rsi < 70 && rsi > 30 },
                     { label: "MACD", value: "Bullish", status: "Buy", positive: true },
-                    { label: "50-Day MA", value: sma50 > 0 ? `$${sma50.toFixed(2)}` : 'N/A', status: sma50 > 0 ? (currentPrice > sma50 ? "Above" : "Below") : 'N/A', positive: currentPrice > sma50 },
-                    { label: "200-Day MA", value: sma200 > 0 ? `$${sma200.toFixed(2)}` : 'N/A', status: sma200 > 0 ? (currentPrice > sma200 ? "Above" : "Below") : 'N/A', positive: currentPrice > sma200 },
+                    { label: "50-Day MA", value: sma50 > 0 ? `${currSym}${sma50.toFixed(2)}` : 'N/A', status: sma50 > 0 ? (currentPrice > sma50 ? "Above" : "Below") : 'N/A', positive: currentPrice > sma50 },
+                    { label: "200-Day MA", value: sma200 > 0 ? `${currSym}${sma200.toFixed(2)}` : 'N/A', status: sma200 > 0 ? (currentPrice > sma200 ? "Above" : "Below") : 'N/A', positive: currentPrice > sma200 },
                     { label: "Volume", value: `${(vol / 1000000).toFixed(2)}M`, status: "High" }
                 ]);
             }
@@ -402,7 +431,7 @@ export default function StockTrading() {
                 name: profile.name || symbol,
                 symbol: profile.ticker || symbol,
                 sector: profile.finnhubIndustry || 'N/A',
-                marketCap: profile.marketCapitalization ? `${(profile.marketCapitalization / 1000).toFixed(2)}B` : 'N/A',
+                marketCap: profile.marketCapitalization ? `${currSym}${(profile.marketCapitalization / 1000).toFixed(2)}B` : 'N/A',
                 peRatio: financials.metric?.peBasicExclExtraTTM?.toFixed(2) || 'N/A',
                 eps: financials.metric?.epsExclExtraTTM?.toFixed(2) || 'N/A',
                 dividend: financials.metric?.dividendYieldIndicatedAnnual?.toFixed(2) || 'N/A',
@@ -411,9 +440,11 @@ export default function StockTrading() {
                 low52w: financials.metric?.['52WeekLow']?.toFixed(2) || quote.l?.toFixed(2) || '0.00',
                 avgVolume: financials.metric?.['10DayAverageTradingVolume'] ? `${(financials.metric['10DayAverageTradingVolume'] / 1000000).toFixed(2)}M` : 'N/A',
                 description: `${profile.name || symbol} - ${profile.finnhubIndustry || ''}`,
-                price: quote.c || 0,
-                change: quote.d || 0,
-                changePercent: quote.dp || 0
+                price: finalPrice || 0,
+                change: finalChange || 0,
+                changePercent: finalChangePercent || 0,
+                currency: currencyCode,
+                currencySymbol: currSym
             });
 
         } catch (error) {
@@ -565,7 +596,7 @@ export default function StockTrading() {
                 `Volume ${vol.value}. You can invest up to ₹${amountDisp.toLocaleString()}`,
                 `${stock.sector} sector performance analyzed. Aligns with your goals`,
                 `Beta ${stock.beta} = ${betaVal < 1.2 ? 'Acceptable' : 'Higher'} risk for your profile`,
-                `Target: ₹${(currentPrice * 1.12).toFixed(2)} | Stop: ₹${(currentPrice * 0.92).toFixed(2)} | Allocating: ₹${amountDisp.toLocaleString()}`
+                `Target: ${stock.currencySymbol || '₹'}${(currentPrice * 1.12).toFixed(2)} | Stop: ${stock.currencySymbol || '₹'}${(currentPrice * 0.92).toFixed(2)} | Allocating: ₹${amountDisp.toLocaleString()}`
             ];
 
             setAiMessages(prev => [...prev, {
@@ -749,7 +780,7 @@ export default function StockTrading() {
                                 </div>
 
                                 <div className="text-right">
-                                    <div className="text-3xl font-bold">${stock.price?.toFixed(2) || '0.00'}</div>
+                                    <div className="text-3xl font-bold">{stock.currencySymbol || '$'}{stock.price?.toFixed(2) || '0.00'}</div>
                                     <div className={`flex items-center gap-1 justify-end ${stock.change >= 0 ? "text-success" : "text-destructive"}`}>
                                         {stock.change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                                         <span className="font-medium">
@@ -772,11 +803,11 @@ export default function StockTrading() {
                                     { label: "Sector", value: stock.sector },
                                     { label: "Market Cap", value: stock.marketCap },
                                     { label: "P/E Ratio", value: stock.peRatio },
-                                    { label: "EPS", value: stock.eps },
-                                    { label: "Dividend", value: stock.dividend },
+                                    { label: "EPS", value: stock.eps !== 'N/A' ? `${stock.currencySymbol || '$'}${stock.eps}` : 'N/A' },
+                                    { label: "Dividend", value: stock.dividend !== 'N/A' ? `${stock.currencySymbol || '$'}${stock.dividend}` : 'N/A' },
                                     { label: "Beta", value: stock.beta },
-                                    { label: "52W High", value: stock.high52w },
-                                    { label: "52W Low", value: stock.low52w },
+                                    { label: "52W High", value: `${stock.currencySymbol || '$'}${stock.high52w}` },
+                                    { label: "52W Low", value: `${stock.currencySymbol || '$'}${stock.low52w}` },
                                     { label: "Avg Volume", value: stock.avgVolume },
                                 ].map((item) => (
                                     <div key={item.label} className="p-3 rounded-lg bg-secondary/30 border border-border/50">
