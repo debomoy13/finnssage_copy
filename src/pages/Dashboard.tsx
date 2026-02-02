@@ -228,11 +228,15 @@ export default function Dashboard() {
           </Card>
         </div>
 
+
+
+
+
         {/* Investments & Transactions Group */}
         <div className="grid gap-6 lg:grid-cols-3">
 
           {/* Investment Portfolio */}
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-1">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Investment Portfolio</CardTitle>

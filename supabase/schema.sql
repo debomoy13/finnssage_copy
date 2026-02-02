@@ -105,3 +105,22 @@ create policy "Users can manage their own investments"
 -- STORAGE BUCKETS (If using Supabase Storage for PDFs)
 -- insert into storage.buckets (id, name, public) values ('statements', 'statements', false);
 -- policy for storage would go here
+
+-- USER CREDIT CARDS
+create table public.user_credit_cards (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users not null,
+  bank_name text not null,
+  card_model text not null,
+  credit_limit numeric default 0,
+  features jsonb default '[]'::jsonb, -- Store list of features (e.g. Lounge Access)
+  rewards jsonb default '{}'::jsonb, -- Store reward structure
+  statement_date integer check (statement_date between 1 and 31),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.user_credit_cards enable row level security;
+
+create policy "Users can manage their own credit cards"
+  on public.user_credit_cards for all
+  using ( auth.uid() = user_id );
