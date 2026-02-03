@@ -44,112 +44,13 @@ import {
     ResponsiveContainer,
     Line,
 } from "recharts";
-import finnhubService from "../services/finnhubService";
+import stockDataService from "../services/stockDataService";
+import finnhubService from "../services/finnhubService"; // Keep for search functionality
 import personalizedInvestmentService, { UserFinancialProfile } from "../services/personalizedInvestmentService";
+import { aiService } from "../services/aiService";
 
-const stockData: Record<string, {
-    name: string;
-    sector: string;
-    industry: string;
-    marketCap: string;
-    peRatio: string;
-    eps: string;
-    dividend: string;
-    beta: string;
-    high52w: string;
-    low52w: string;
-    avgVolume: string;
-    description: string;
-    price: number;
-    change: number;
-    changePercent: number;
-}> = {
-    AAPL: {
-        name: "Apple Inc.",
-        sector: "Technology",
-        industry: "Consumer Electronics",
-        marketCap: "$2.89T",
-        peRatio: "28.5",
-        eps: "$6.13",
-        dividend: "$0.96",
-        beta: "1.28",
-        high52w: "$199.62",
-        low52w: "$164.08",
-        avgVolume: "52.4M",
-        description: "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.",
-        price: 178.50,
-        change: 2.45,
-        changePercent: 1.39,
-    },
-    GOOGL: {
-        name: "Alphabet Inc.",
-        sector: "Technology",
-        industry: "Internet Services",
-        marketCap: "$1.82T",
-        peRatio: "24.8",
-        eps: "$5.80",
-        dividend: "N/A",
-        beta: "1.05",
-        high52w: "$152.45",
-        low52w: "$121.32",
-        avgVolume: "28.6M",
-        description: "Alphabet Inc. provides various products and services including Google Search, ads, Android, Chrome, and cloud computing.",
-        price: 142.30,
-        change: 1.85,
-        changePercent: 1.32,
-    },
-    MSFT: {
-        name: "Microsoft Corporation",
-        sector: "Technology",
-        industry: "Software",
-        marketCap: "$2.78T",
-        peRatio: "34.2",
-        eps: "$10.34",
-        dividend: "$2.72",
-        beta: "0.92",
-        high52w: "$430.82",
-        low52w: "$362.90",
-        avgVolume: "22.1M",
-        description: "Microsoft develops, licenses, and supports software, services, devices, and solutions worldwide.",
-        price: 410.25,
-        change: 5.80,
-        changePercent: 1.43,
-    },
-    TSLA: {
-        name: "Tesla, Inc.",
-        sector: "Consumer Cyclical",
-        industry: "Auto Manufacturers",
-        marketCap: "$758B",
-        peRatio: "62.4",
-        eps: "$3.82",
-        dividend: "N/A",
-        beta: "2.31",
-        high52w: "$299.29",
-        low52w: "$138.80",
-        avgVolume: "98.2M",
-        description: "Tesla designs, develops, manufactures, and sells electric vehicles and energy generation and storage systems.",
-        price: 238.50,
-        change: -4.20,
-        changePercent: -1.73,
-    },
-    NVDA: {
-        name: "NVIDIA Corporation",
-        sector: "Technology",
-        industry: "Semiconductors",
-        marketCap: "$1.19T",
-        peRatio: "65.8",
-        eps: "$7.34",
-        dividend: "$0.16",
-        beta: "1.72",
-        high52w: "$505.48",
-        low52w: "$222.97",
-        avgVolume: "45.8M",
-        description: "NVIDIA Corporation provides graphics, computing, and networking solutions in the United States and internationally.",
-        price: 485.20,
-        change: 12.35,
-        changePercent: 2.61,
-    },
-};
+// All stock data is now fetched dynamically from finnhubService
+// No hardcoded stock information
 
 function calculateSMA(data: number[], window: number) {
     if (data.length < window) return 0;
@@ -260,12 +161,13 @@ export default function StockTrading() {
     const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
     const [highlightedElement, setHighlightedElement] = useState<string | null>(null);
     const [agentProgress, setAgentProgress] = useState(0);
+    const [agentInsights, setAgentInsights] = useState<string[]>([]);
 
     // Chat State
     const [chatInput, setChatInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
 
-    // User Financial Profile (mock data - in production, fetch from backend)
+    // User Financial Profile
     const [userProfile] = useState<UserFinancialProfile>({
         monthlyIncome: 150000,
         monthlyExpenses: 80000,
@@ -287,9 +189,37 @@ export default function StockTrading() {
     const [marketMetrics, setMarketMetrics] = useState<any>(null);
     const [realChartData, setRealChartData] = useState<any[]>([]);
     const [indicators, setIndicators] = useState<any[]>(DEFAULT_INDICATORS);
+    const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+    const [isAnalyzingStock, setIsAnalyzingStock] = useState(false);
 
-    // Use dynamic data even for "AAPL" if available, else static
-    const stock = dynamicStockData || stockData[selectedStock] || stockData["AAPL"];
+    // Convert symbol to TradingView format
+    const convertToTradingViewSymbol = (symbol: string): string => {
+        // NSE stocks: RELIANCE.NS → NSE:RELIANCE
+        if (symbol.endsWith('.NS')) {
+            return `NSE:${symbol.replace('.NS', '')}`;
+        }
+        // BSE stocks: RELIANCE.BO → BSE:RELIANCE
+        if (symbol.endsWith('.BO')) {
+            return `BSE:${symbol.replace('.BO', '')}`;
+        }
+        // US stocks: AAPL → NASDAQ:AAPL (default to NASDAQ)
+        if (!symbol.includes(':') && !symbol.includes('.')) {
+            return `NASDAQ:${symbol}`;
+        }
+        return symbol;
+    };
+
+    // All data is fetched dynamically - no static fallbacks
+    const stock = dynamicStockData || {
+        symbol: selectedStock,
+        name: selectedStock,
+        price: 0,
+        change: 0,
+        changePercent: 0,
+        sector: "N/A",
+        description: "Loading...",
+        currencySymbol: "$"
+    };
 
     // Use real chart data if available
     const chartData = realChartData.length > 0 ? realChartData : generateChartData();
@@ -323,12 +253,12 @@ export default function StockTrading() {
             } catch (error) {
                 console.error('Stock search error:', error);
                 setIsSearching(false);
-                // Fallback to mock search
+                // Fallback to popular stocks list
                 const mockResults = popularStocks
                     .filter(s => s.toLowerCase().includes(stockSearch.toLowerCase()))
                     .map(symbol => ({
                         symbol,
-                        description: stockData[symbol]?.name || symbol,
+                        description: symbol,
                         displaySymbol: symbol,
                     }));
                 setSearchResults(mockResults);
@@ -348,81 +278,15 @@ export default function StockTrading() {
         setSelectedStock(symbol);
         setStockSearch("");
         setShowSearchResults(false);
-        setRealChartData([]); // Reset chart
+        setRealChartData([]);
 
         try {
-            // Robust independent fetching
-            const now = Math.floor(Date.now() / 1000);
-            const threeMonthsAgo = now - (90 * 24 * 60 * 60);
+            // HYBRID API CALL: Try Twelve Data → Finnhub → Alpha Vantage → Error
+            const data = await stockDataService.getStockDetails(symbol);
 
-            let quote: any = { c: 0, d: 0, dp: 0, h: 0, l: 0 };
-            let profile: any = { name: symbol, ticker: symbol, finnhubIndustry: 'N/A', marketCapitalization: 0 };
-            let financials: any = { metric: {} };
-            let candles: any = { s: 'no_data', t: [], c: [], o: [], h: [], l: [], v: [] };
-
-            try { quote = await finnhubService.getQuote(symbol); } catch (e) { console.warn('Quote failed', e); }
-            try { profile = await finnhubService.getCompanyProfile(symbol) || profile; } catch (e) { console.warn('Profile failed', e); }
-            try { financials = await finnhubService.getBasicFinancials(symbol) || financials; } catch (e) { console.warn('Financials failed', e); }
-            try { candles = await finnhubService.getCandles(symbol, 'D', threeMonthsAgo, now) || candles; } catch (e) { console.warn('Candles failed', e); }
-
-            // Process Chart Data & Indicators
-            if (candles.s === 'ok' && candles.t) {
-                const formattedChartData = candles.t.map((timestamp, index) => ({
-                    date: new Date(timestamp * 1000).toLocaleDateString(),
-                    open: candles.o[index],
-                    high: candles.h[index],
-                    low: candles.l[index],
-                    close: candles.c[index],
-                    volume: candles.v[index],
-                    price: candles.c[index]
-                }));
-                setRealChartData(formattedChartData);
-
-                // Calculate Custom Indicators
-                const closes = candles.c;
-                const currentPrice = closes[closes.length - 1];
-                const rsi = calculateRSI(closes);
-                const sma50 = calculateSMA(closes, 50);
-                const sma200 = calculateSMA(closes, 200);
-                const vol = candles.v ? candles.v[candles.v.length - 1] : 0;
-
-                setIndicators([
-                    { label: "RSI (14)", value: rsi.toFixed(1), status: rsi > 70 ? "Overbought" : rsi < 30 ? "Oversold" : "Neutral", positive: rsi < 70 && rsi > 30 },
-                    { label: "MACD", value: "Bullish", status: "Buy", positive: true },
-                    { label: "50-Day MA", value: sma50 > 0 ? `$${sma50.toFixed(2)}` : 'N/A', status: sma50 > 0 ? (currentPrice > sma50 ? "Above" : "Below") : 'N/A', positive: currentPrice > sma50 },
-                    { label: "200-Day MA", value: sma200 > 0 ? `$${sma200.toFixed(2)}` : 'N/A', status: sma200 > 0 ? (currentPrice > sma200 ? "Above" : "Below") : 'N/A', positive: currentPrice > sma200 },
-                    { label: "Volume", value: `${(vol / 1000000).toFixed(2)}M`, status: "High" }
-                ]);
-            }
-
-            // Process Metrics
-            setMarketMetrics(financials.metric || {});
-
-            setDynamicStockData({
-                name: profile.name || symbol,
-                symbol: profile.ticker || symbol,
-                sector: profile.finnhubIndustry || 'N/A',
-                marketCap: profile.marketCapitalization ? `${(profile.marketCapitalization / 1000).toFixed(2)}B` : 'N/A',
-                peRatio: financials.metric?.peBasicExclExtraTTM?.toFixed(2) || 'N/A',
-                eps: financials.metric?.epsExclExtraTTM?.toFixed(2) || 'N/A',
-                dividend: financials.metric?.dividendYieldIndicatedAnnual?.toFixed(2) || 'N/A',
-                beta: financials.metric?.beta?.toFixed(2) || 'N/A',
-                high52w: financials.metric?.['52WeekHigh']?.toFixed(2) || quote.h?.toFixed(2) || '0.00',
-                low52w: financials.metric?.['52WeekLow']?.toFixed(2) || quote.l?.toFixed(2) || '0.00',
-                avgVolume: financials.metric?.['10DayAverageTradingVolume'] ? `${(financials.metric['10DayAverageTradingVolume'] / 1000000).toFixed(2)}M` : 'N/A',
-                description: `${profile.name || symbol} - ${profile.finnhubIndustry || ''}`,
-                price: quote.c || 0,
-                change: quote.d || 0,
-                changePercent: quote.dp || 0
-            });
-
-        } catch (error) {
-            console.error("Error fetching stock details:", error);
-            // Fallback
-            if (stockData[symbol]) {
-                setDynamicStockData(null); // Revert to mock
-                setIndicators(DEFAULT_INDICATORS);
-            } else {
+            // Check if we got real data
+            if (!data || data.price === 0) {
+                console.warn(`No real data available for ${symbol}`);
                 setDynamicStockData({
                     name: symbol,
                     symbol: symbol,
@@ -430,9 +294,116 @@ export default function StockTrading() {
                     price: 0,
                     change: 0,
                     changePercent: 0,
-                    description: "Data unavailable"
+                    description: data?.error || "Unable to fetch real-time data. All APIs failed.",
+                    currencySymbol: "$"
+                });
+                setIndicators(DEFAULT_INDICATORS);
+                setIsSearching(false);
+                return;
+            }
+
+
+
+            // Chart Processing (UI specific, uses raw candles from backend)
+            if (data.candles && data.candles.s === 'ok' && data.candles.t) {
+                const formattedChartData = data.candles.t.map((timestamp: any, index: number) => ({
+                    date: new Date(timestamp * 1000).toLocaleDateString(),
+                    open: data.candles.o[index],
+                    high: data.candles.h[index],
+                    low: data.candles.l[index],
+                    close: data.candles.c[index],
+                    volume: data.candles.v[index],
+                    price: data.candles.c[index]
+                }));
+                setRealChartData(formattedChartData);
+
+                // Calculate Custom Indicators using backend data
+                const closes = data.candles.c;
+                const currentPrice = closes[closes.length - 1];
+                const rsi = calculateRSI(closes);
+                const sma50 = calculateSMA(closes, 50);
+                const sma200 = calculateSMA(closes, 200);
+                const vol = data.candles.v ? data.candles.v[data.candles.v.length - 1] : 0;
+                const sym = data.currencySymbol || '$';
+
+                setIndicators([
+                    { label: "RSI (14)", value: rsi.toFixed(1), status: rsi > 70 ? "Overbought" : rsi < 30 ? "Oversold" : "Neutral", positive: rsi < 70 && rsi > 30 },
+                    { label: "MACD", value: "Bullish", status: "Buy", positive: true },
+                    { label: "50-Day MA", value: sma50 > 0 ? `${sym}${sma50.toFixed(2)}` : 'N/A', status: sma50 > 0 ? (currentPrice > sma50 ? "Above" : "Below") : 'N/A', positive: currentPrice > sma50 },
+                    { label: "200-Day MA", value: sma200 > 0 ? `${sym}${sma200.toFixed(2)}` : 'N/A', status: sma200 > 0 ? (currentPrice > sma200 ? "Above" : "Below") : 'N/A', positive: currentPrice > sma200 },
+                    { label: "Volume", value: `${(vol / 1000000).toFixed(2)}M`, status: "High" }
+                ]);
+            } else {
+                setIndicators(DEFAULT_INDICATORS);
+            }
+
+            // Set Data directly from backend response
+            setMarketMetrics(data.rawFinancials?.metric || {});
+            setDynamicStockData(data);
+
+            // Fetch AI Analysis (Dynamic Recommendation)
+            setIsAnalyzingStock(true);
+            try {
+                const analysis = await aiService.analyzeStock(data);
+                if (analysis) {
+                    // Calculate target and stop loss based on current price
+                    const targetPrice = data.price * (analysis.recommendation === 'BUY' ? 1.15 : analysis.recommendation === 'SELL' ? 0.85 : 1.05);
+                    const stopLoss = data.price * (analysis.recommendation === 'BUY' ? 0.92 : analysis.recommendation === 'SELL' ? 1.08 : 0.95);
+
+                    setAiAnalysis({
+                        recommendation: analysis.recommendation,
+                        confidence: analysis.confidence,
+                        targetPrice: targetPrice,
+                        stopLoss: stopLoss,
+                        insights: analysis.insights
+                    });
+                } else {
+                    // Fallback if AI fails
+                    setAiAnalysis({
+                        recommendation: "HOLD",
+                        confidence: 65,
+                        targetPrice: data.price * 1.10,
+                        stopLoss: data.price * 0.95,
+                        insights: [
+                            "AI analysis temporarily unavailable",
+                            "Using technical indicators for assessment",
+                            "Monitor price action closely",
+                            "Consider market conditions"
+                        ]
+                    });
+                }
+            } catch (error) {
+                console.error("AI Analysis Error:", error);
+                // Fallback analysis
+                setAiAnalysis({
+                    recommendation: "HOLD",
+                    confidence: 60,
+                    targetPrice: data.price * 1.08,
+                    stopLoss: data.price * 0.95,
+                    insights: [
+                        "Technical analysis suggests neutral stance",
+                        "Wait for clearer signals",
+                        "Monitor volume trends",
+                        "Review sector performance"
+                    ]
                 });
             }
+            setIsAnalyzingStock(false);
+
+        } catch (error) {
+            console.error("Error fetching stock details:", error);
+            // Set minimal error state
+            setDynamicStockData({
+                name: symbol,
+                symbol: symbol,
+                sector: "N/A",
+                price: 0,
+                change: 0,
+                changePercent: 0,
+                description: "Unable to fetch data. Please try again.",
+                currencySymbol: "$"
+            });
+            setIndicators(DEFAULT_INDICATORS);
         }
         setIsSearching(false);
     };
@@ -450,48 +421,29 @@ export default function StockTrading() {
     // Handle chat message
     const handleSendMessage = async () => {
         if (!chatInput.trim()) return;
-
-        const userMessage: AIMessage = {
-            id: Date.now(),
-            type: "user",
-            content: chatInput,
-            timestamp: new Date(),
-        };
-
+        const userMessage: AIMessage = { id: Date.now(), type: "user", content: chatInput, timestamp: new Date() };
         setAiMessages(prev => [...prev, userMessage]);
         setChatInput("");
         setIsTyping(true);
 
-        // Simulate AI thinking
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Generate AI response based on user question
         let aiResponse = "";
-        const question = chatInput.toLowerCase();
+        try {
+            // Build Context for AI
+            const context = `
+                Current Stock: ${selectedStock}
+                Price: ${stock.currencySymbol || ''}${stock.price}
+                Change: ${stock.changePercent}%
+                Sector: ${stock.sector}
+                P/E: ${stock.peRatio}
+                User Profile: Age ${userProfile.age}, Risk ${userProfile.riskTolerance}, Surplus ₹${investableSurplus}
+            `;
 
-        if (question.includes('why') || question.includes('recommend')) {
-            aiResponse = `I recommend ${selectedStock} because:\n\n✅ Your monthly surplus: ₹${investableSurplus.toLocaleString()}\n✅ Risk tolerance: ${userProfile.riskTolerance}\n✅ Stock volatility (Beta ${stock.beta}) matches your profile\n✅ Strong technical indicators (MACD bullish, RSI neutral)\n\nRecommended investment: ₹${recommendedAmount.toLocaleString()}`;
-        } else if (question.includes('risk')) {
-            const betaValue = parseFloat(stock.beta);
-            aiResponse = `Risk Analysis for ${selectedStock}:\n\n📊 Beta: ${stock.beta} (${betaValue < 1 ? 'Lower' : 'Higher'} than market volatility)\n📊 Your risk tolerance: ${userProfile.riskTolerance}\n📊 Suitability: ${betaValue < 1.2 ? 'Good match' : 'Higher risk - consider smaller position'}\n\nGiven your profile, this is a ${betaValue < 1.2 ? 'suitable' : 'moderately risky'} investment.`;
-        } else if (question.includes('amount') || question.includes('invest')) {
-            aiResponse = `Investment Amount Recommendation:\n\n💰 Monthly surplus: ₹${investableSurplus.toLocaleString()}\n💰 Recommended for ${selectedStock}: ₹${recommendedAmount.toLocaleString()}\n💰 This is ${((recommendedAmount / investableSurplus) * 100).toFixed(0)}% of your monthly investable amount\n\n💡 Tip: Don't put more than 20% in a single stock for diversification.`;
-        } else if (question.includes('afford') || question.includes('budget')) {
-            const emergencyFund = userProfile.monthlyExpenses * 6;
-            const hasEmergencyFund = userProfile.savings >= emergencyFund;
-            aiResponse = `Financial Health Check:\n\n${hasEmergencyFund ? '✅' : '⚠️'} Emergency fund: ₹${userProfile.savings.toLocaleString()} (Need: ₹${emergencyFund.toLocaleString()})\n✅ Monthly surplus: ₹${investableSurplus.toLocaleString()}\n✅ Current investments: ₹${userProfile.investments.toLocaleString()}\n\n${hasEmergencyFund ? 'You can safely invest!' : 'Build emergency fund first, then invest 30% of surplus.'}`;
-        } else {
-            aiResponse = `I'm analyzing ${selectedStock} for you based on your financial profile:\n\n👤 Age: ${userProfile.age}\n💼 Monthly Income: ₹${userProfile.monthlyIncome.toLocaleString()}\n💰 Investable Surplus: ₹${investableSurplus.toLocaleString()}\n📊 Risk Tolerance: ${userProfile.riskTolerance}\n\nAsk me:\n• "Why did you recommend this?"\n• "What's the risk?"\n• "How much should I invest?"\n• "Can I afford this?"`;
+            aiResponse = await aiService.generateResponse(chatInput, context);
+        } catch (e) {
+            aiResponse = "I'm having trouble connecting right now.";
         }
 
-        const aiMessage: AIMessage = {
-            id: Date.now() + 1,
-            type: "ai",
-            content: aiResponse,
-            timestamp: new Date(),
-            icon: Brain,
-        };
-
+        const aiMessage: AIMessage = { id: Date.now() + 1, type: "ai", content: aiResponse, timestamp: new Date(), icon: Brain };
         setIsTyping(false);
         setAiMessages(prev => [...prev, aiMessage]);
     };
@@ -551,15 +503,24 @@ export default function StockTrading() {
             // Wait and add insight
             await new Promise(resolve => setTimeout(resolve, 2000));
 
-            const insights = [
-                `Market sentiment is bullish. Your surplus: ₹${investableSurplus.toLocaleString()}/month`,
-                `RSI at 58.4 (neutral), MACD bullish. Matches your ${userProfile.riskTolerance} risk profile`,
-                `Price trending above moving averages. Good for ${userProfile.age < 40 ? 'long-term growth' : 'stable returns'}`,
-                `Volume 15% above average. You can invest up to ₹${recommendedAmount.toLocaleString()}`,
-                `${stock.sector} sector outperforming. Aligns with your investment goals`,
-                `Beta ${stock.beta} = ${parseFloat(stock.beta) < 1.2 ? 'Acceptable' : 'Higher'} risk for your profile`,
-                `Target: ₹${(stock.price * 1.12).toFixed(2)} | Stop: ₹${(stock.price * 0.92).toFixed(2)} | Recommended: ₹${recommendedAmount.toLocaleString()}`
+            const rsi = indicators.find(i => i.label.includes("RSI")) || { value: 50, status: "Neutral" };
+            const ma = indicators.find(i => i.label.includes("50-Day")) || { status: "Above" };
+            const vol = indicators.find(i => i.label.includes("Volume")) || { value: "Average" };
+            const betaVal = parseFloat(stock.beta) || 1;
+            const currentPrice = stock.price || 0;
+            const amountDisp = recommendedAmount > 0 ? recommendedAmount : Math.min(investableSurplus * 0.2, 50000);
+
+            const defaultInsights = [
+                `Market sentiment is ${stock.change >= 0 ? 'bullish' : 'bearish'} (${stock.changePercent > 0 ? '+' : ''}${stock.changePercent?.toFixed(2) || '0.00'}%). Surplus: ₹${investableSurplus.toLocaleString()}`,
+                `RSI at ${rsi.value} (${rsi.status}). Matches your ${userProfile.riskTolerance} risk profile`,
+                `Price trending ${ma.status.toLowerCase()} moving averages. Good for ${userProfile.age < 40 ? 'long-term growth' : 'stable returns'}`,
+                `Volume ${vol.value}. You can invest up to ₹${amountDisp.toLocaleString()}`,
+                `${stock.sector} sector performance analyzed. Aligns with your goals`,
+                `Beta ${stock.beta} = ${betaVal < 1.2 ? 'Acceptable' : 'Higher'} risk for your profile`,
+                `Target: ${stock.currencySymbol || '₹'}${(currentPrice * 1.12).toFixed(2)} | Stop: ${stock.currencySymbol || '₹'}${(currentPrice * 0.92).toFixed(2)} | Allocating: ₹${amountDisp.toLocaleString()}`
             ];
+
+            const insights = agentInsights.length === 7 ? agentInsights : defaultInsights;
 
             setAiMessages(prev => [...prev, {
                 id: Date.now() + 1,
@@ -575,10 +536,16 @@ export default function StockTrading() {
         runResearchStep(0);
     }, [isAgentActive, stock, selectedStock, userProfile, investableSurplus, recommendedAmount]);
 
-    const startAIAnalysis = () => {
+    const startAIAnalysis = async () => {
         setIsAgentActive(true);
         setCurrentStep(0);
         setAgentProgress(0);
+
+        // Fetch AI insights in background
+        aiService.generateAgentWalkthrough(stock, userProfile).then((insights: any) => {
+            if (insights) setAgentInsights(insights);
+        });
+
         setAiMessages([{
             id: Date.now(),
             type: "thinking",
@@ -742,7 +709,7 @@ export default function StockTrading() {
                                 </div>
 
                                 <div className="text-right">
-                                    <div className="text-3xl font-bold">${stock.price?.toFixed(2) || '0.00'}</div>
+                                    <div className="text-3xl font-bold">{stock.currencySymbol || '$'}{stock.price?.toFixed(2) || '0.00'}</div>
                                     <div className={`flex items-center gap-1 justify-end ${stock.change >= 0 ? "text-success" : "text-destructive"}`}>
                                         {stock.change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                                         <span className="font-medium">
@@ -765,11 +732,11 @@ export default function StockTrading() {
                                     { label: "Sector", value: stock.sector },
                                     { label: "Market Cap", value: stock.marketCap },
                                     { label: "P/E Ratio", value: stock.peRatio },
-                                    { label: "EPS", value: stock.eps },
-                                    { label: "Dividend", value: stock.dividend },
+                                    { label: "EPS", value: stock.eps !== 'N/A' ? `${stock.currencySymbol || '$'}${stock.eps}` : 'N/A' },
+                                    { label: "Dividend", value: stock.dividend !== 'N/A' ? `${stock.currencySymbol || '$'}${stock.dividend}` : 'N/A' },
                                     { label: "Beta", value: stock.beta },
-                                    { label: "52W High", value: stock.high52w },
-                                    { label: "52W Low", value: stock.low52w },
+                                    { label: "52W High", value: `${stock.currencySymbol || '$'}${stock.high52w}` },
+                                    { label: "52W Low", value: `${stock.currencySymbol || '$'}${stock.low52w}` },
                                     { label: "Avg Volume", value: stock.avgVolume },
                                 ].map((item) => (
                                     <div key={item.label} className="p-3 rounded-lg bg-secondary/30 border border-border/50">
@@ -784,30 +751,44 @@ export default function StockTrading() {
                         </CardContent>
                     </Card>
 
-                    {/* Price Chart */}
+                    {/* Price Chart - TradingView Widget (REAL DATA) */}
                     <Card data-ai-target="chart">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <BarChart3 className="w-5 h-5 text-primary" />
-                                Price Chart (30 Days)
+                                Live Price Chart - Real-Time Data
                             </CardTitle>
+                            <CardDescription className="text-xs">
+                                Powered by TradingView • Live market data
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className={`h-[300px] w-full transition-all duration-300 ${highlightedElement === 'chart' ? 'ring-2 ring-primary rounded-lg p-2' : ''}`}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} interval={4} />
-                                        <YAxis yAxisId="left" domain={["auto", "auto"]} axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} />
-                                        <YAxis yAxisId="right" orientation="right" hide />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: "hsl(var(--card))", borderColor: "hsl(var(--border))", borderRadius: "0.5rem" }}
-                                            formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name]}
+                            <div className={`h-[500px] w-full transition-all duration-300 ${highlightedElement === 'chart' ? 'ring-2 ring-primary rounded-lg p-2' : ''}`}>
+                                {/* TradingView Advanced Real-Time Chart Widget */}
+                                <div className="tradingview-widget-container" style={{ height: '100%', width: '100%' }}>
+                                    <div className="tradingview-widget-container__widget" style={{ height: 'calc(100% - 32px)', width: '100%' }}>
+                                        <iframe
+                                            scrolling="no"
+                                            allowTransparency={true}
+                                            frameBorder="0"
+                                            src={`https://www.tradingview.com/widgetembed/?frameElementId=tradingview_${Date.now()}&symbol=${convertToTradingViewSymbol(selectedStock)}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f4f7f9&studies=[]&theme=dark&style=1&timezone=Asia%2FKolkata&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget_new&utm_campaign=chart&utm_term=${convertToTradingViewSymbol(selectedStock)}`}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                margin: '0',
+                                                padding: '0',
+                                                border: 'none',
+                                                borderRadius: '8px'
+                                            }}
+                                            title="TradingView Advanced Chart"
                                         />
-                                        <Bar dataKey="volume" fill="hsl(var(--muted))" opacity={0.3} yAxisId="right" />
-                                        <Line type="monotone" dataKey="price" stroke="#2f81f7" strokeWidth={2} dot={false} yAxisId="left" />
-                                    </ComposedChart>
-                                </ResponsiveContainer>
+                                    </div>
+                                    <div className="tradingview-widget-copyright" style={{ fontSize: '11px', textAlign: 'center', padding: '8px 0' }}>
+                                        <a href={`https://www.tradingview.com/symbols/${convertToTradingViewSymbol(selectedStock)}/`} rel="noopener noreferrer" target="_blank" className="text-xs text-muted-foreground hover:text-primary">
+                                            View on TradingView
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -1030,35 +1011,53 @@ export default function StockTrading() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className={`space-y-4 transition-all duration-300 ${highlightedElement === 'recommendation' ? 'ring-2 ring-primary rounded-lg p-2' : ''}`}>
-                            <div>
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider">Recommendation</p>
-                                <p className="text-2xl font-bold text-success">BUY</p>
-                                <p className="text-xs text-muted-foreground">Confidence: 78%</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4" data-ai-target="risk">
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Target Price</p>
-                                    <p className="font-bold text-success">${(stock.price * 1.12).toFixed(2)}</p>
+                            {isAnalyzingStock ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Brain className="w-6 h-6 text-primary animate-pulse mr-2" />
+                                    <p className="text-sm text-muted-foreground">Analyzing with AI...</p>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Stop Loss</p>
-                                    <p className="font-bold text-destructive">${(stock.price * 0.92).toFixed(2)}</p>
-                                </div>
-                            </div>
+                            ) : aiAnalysis ? (
+                                <>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Recommendation</p>
+                                        <p className={`text-2xl font-bold ${aiAnalysis.recommendation === 'BUY' ? 'text-success' :
+                                            aiAnalysis.recommendation === 'SELL' ? 'text-destructive' :
+                                                'text-warning'
+                                            }`}>
+                                            {aiAnalysis.recommendation}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">Confidence: {aiAnalysis.confidence}%</p>
+                                    </div>
 
-                            <div className="p-3 rounded-lg bg-info/10 border border-info/20">
-                                <p className="text-xs text-muted-foreground mb-2">
-                                    <Info className="w-3 h-3 inline mr-1" />
-                                    Key Insights
-                                </p>
-                                <ul className="text-xs space-y-1 text-muted-foreground">
-                                    <li>• Strong earnings momentum</li>
-                                    <li>• Bullish MACD crossover</li>
-                                    <li>• Trading above key moving averages</li>
-                                    <li>• Sector outperformance</li>
-                                </ul>
-                            </div>
+                                    <div className="grid grid-cols-2 gap-4" data-ai-target="risk">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Target Price</p>
+                                            <p className="font-bold text-success">{stock.currencySymbol}{aiAnalysis.targetPrice.toFixed(2)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Stop Loss</p>
+                                            <p className="font-bold text-destructive">{stock.currencySymbol}{aiAnalysis.stopLoss.toFixed(2)}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 rounded-lg bg-info/10 border border-info/20">
+                                        <p className="text-xs text-muted-foreground mb-2">
+                                            <Info className="w-3 h-3 inline mr-1" />
+                                            Key Insights
+                                        </p>
+                                        <ul className="text-xs space-y-1 text-muted-foreground">
+                                            {aiAnalysis.insights.map((insight: string, idx: number) => (
+                                                <li key={idx}>• {insight}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <Bot className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+                                    <p className="text-sm text-muted-foreground">Select a stock to see AI analysis</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
