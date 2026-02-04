@@ -434,19 +434,22 @@ export default function Dashboard() {
     const monthlyIncome = financials.income;
     const monthlyExpenses = financials.expenses;
 
-    // If user has entered data, show it for the current month
+    // If user has entered data, show it for the current month and 5 months back (projected)
     if (monthlyIncome > 0 || monthlyExpenses > 0) {
-      const currentMonth = new Date().toLocaleDateString("en-US", { month: "short" });
-      return [
-        {
-          name: currentMonth,
+      const data = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        data.push({
+          name: d.toLocaleDateString("en-US", { month: "short" }),
           expenses: monthlyExpenses,
           income: monthlyIncome
-        }
-      ];
+        });
+      }
+      return data;
     }
 
-    // No data at all - show empty state
+    // No data at all - return empty to trigger "No trend data available" state
     return [];
   }, [transactions, financials.income, financials.expenses]);
 
