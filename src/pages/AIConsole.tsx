@@ -245,7 +245,7 @@ export default function AIConsole() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Latency</span>
-                  <span className="text-sm text-success font-mono">< 300ms</span>
+                  <span className="text-sm text-success font-mono">&lt; 300ms</span>
                 </div>
               </div>
             </CardContent>
