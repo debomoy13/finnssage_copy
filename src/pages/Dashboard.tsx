@@ -103,9 +103,6 @@ export default function Dashboard() {
   const chartData = useMemo(() => {
     if (transactions.length > 0) {
       // ... (Logic to process real transactions)
-      // For brevity in this prompt, using a simplified mapper if specific transaction logic isn't strictly reused
-      // But adhering to the user request "make it work fully", let's assume if there are transactions, we map them.
-      // If the processed array is empty or weird, fallback to demo.
       const monthlyData: any = {};
       transactions.forEach(t => {
         const d = new Date(t.date);
@@ -327,7 +324,6 @@ export default function Dashboard() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
-                {/* <div className="flex items-center justify-center h-full text-muted-foreground">Chart Loading...</div> */}
               </div>
             </CardContent>
           </Card>
